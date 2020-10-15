@@ -1,0 +1,7 @@
+turn 21
+name  Rocca Magna
+gameState normal
+upgrades farm 3 1
+upgrades houses 3 0
+reserves 355 187 1005
+production 5 30 50

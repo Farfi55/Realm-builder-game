@@ -1,0 +1,8 @@
+createSaveOnNewGame True
+autoSaveEvery 3
+askForSaveName False
+showHelpText True
+autoLoadLastSaveOnStartup True
+savesDir saves/
+commandsPerPage 10
+hasShownTutorial True

@@ -1,0 +1,9 @@
+turn 4
+name Trier
+gameState normal
+turnsToAutosave 3
+hasShownTutorial True
+upgrades farm 1 0
+upgrades houses 1 0
+reserves 65 450 850
+production 5 30 50

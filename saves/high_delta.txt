@@ -1,7 +1,0 @@
-turn 3
-name High Delta
-gameState normal
-upgrades farm 1 0
-upgrades houses 0 0
-reserves 140 455 750
-production 5 30 50

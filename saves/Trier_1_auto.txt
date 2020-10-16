@@ -1,9 +1,0 @@
-turn 1
-name Trier
-gameState normal
-turnsToAutosave 3
-hasShownTutorial True
-upgrades farm 0 0
-upgrades houses 0 0
-reserves 100 500 1000
-production 5 30 50

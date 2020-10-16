@@ -64,9 +64,16 @@ class Resources:
         return Resources(food, gold, manpower)
 
 
+# pop = 100
+# pop += prd.food * 0.6 * (aspettativa_di_vita) * min((capacita / pop),2)
+
+
 # UPGRADES:
 # farm (1 - 5)     keep (1 - 3)       workshop (1 - 3)   stable (1)
 # houses (1 - 5)   market (1 - 3)     port (1 - 2)       hospital (1)
+
+#limited number of upgrades, can be increased through acquiring new territories
+
 class Upgrade:
 
     def __init__(self, name: str, level: int, baseCost: Resources, production: Resources, constructionTime: int):
@@ -88,7 +95,7 @@ class Farm(Upgrade):
     def ShowArt(self):
         print(f"\t\t\t[ {self.name} ]")
         print(r"""
-                                               __
+                                        __
                  ,-_                  (`  ).
                  |-_'-,              (     ).
                  |-_'-'           _(        '`.
@@ -276,29 +283,52 @@ class Options:
     savesDir = "saves/"
     commandsPerPage = 10
 
+    commandsPerPage = 9
     hasShownTutorial = False
+    startingResources = Resources(10,10,10)
+    startingProduction = Resources(1,1,1)
+
 
     @classmethod
     def Save(cls):
-        with open("Options.txt", "w") as saveFile:
+        with open("options.txt", "w") as saveFile:
             saveFile.write(
+                f"\n# when the game start do you want to save? (True or False)\n"
                 f"createSaveOnNewGame {cls.createSaveOnNewGame}\n"
+                f"\n# how many turns in between saves? (0 = no autosaves) (number) \n"
                 f"autoSaveEvery {cls.autoSaveEvery}\n"
+                f"\n# do you want to specify the save name? (True or False)\n"
                 f"askForSaveName {cls.askForSaveName}\n"
+                f"\n# show helping text (recommended) (True or False)\n"
                 f"showHelpText {cls.showHelpText}\n"
+                f"\n# when starting the game do you want to \n"
+                f"# resume where you left off automatically (True or False)\n"
                 f"autoLoadLastSaveOnStartup {cls.autoLoadLastSaveOnStartup}\n"
+                f"\n# the folder where the saves will be stored ( dirName/ )\n"
                 f"savesDir {cls.savesDir}\n"
+                f"\n# number of commands shown per page when using 'help' or '?' (number)\n"
                 f"commandsPerPage {cls.commandsPerPage}\n"
+                f"\n# False = show tutorial next time you open the game\n"
+                f"# True = don't show the tutorial\n"
                 f"hasShownTutorial {cls.hasShownTutorial}\n"
+                f"\n# resources when starting a new game ( number x3 )\n"
+                f"startingResources {cls.startingResources.food} {cls.startingResources.gold} {cls.startingResources.manpower}\n"
+                f"\n# production when starting a new game ( number x3 )\n"
+                f"startingProduction {cls.startingProduction.food} {cls.startingProduction.gold} {cls.startingProduction.manpower}\n"
             )
 
     @classmethod
     def Load(cls):
-        fullSaveName = "Options.txt"
+        fullSaveName = "options.txt"
         if os.path.exists(fullSaveName):
             with open(fullSaveName, "r") as saveFile:
                 for line in saveFile.readlines():
-                    key, value = line.split()
+                    information = line.split()
+                    key = information[0]
+                    value = information[1]
+
+                    if key in ["#", "//"]: # to make comments
+                        pass
                     if key == "createSaveOnNewGame":
                         cls.createSaveOnNewGame = bool(value)
                     elif key == "autoSaveEvery":
@@ -315,6 +345,15 @@ class Options:
                         cls.commandsPerPage = int(value)
                     elif key == "hasShownTutorial":
                         cls.hasShownTutorial = bool(value)
+                    elif key == "startingResources":
+                        key, f, g, m = information
+                        cls.startingResources = Resources(int(f),int(g),int(m))
+                    elif key == "startingProduction":
+                        key, f, g, m = information
+                        cls.startingProduction = Resources(int(f),int(g),int(m))
+
+
+
 
 
 class Utils:
@@ -338,7 +377,7 @@ class Game:
         "resources": "shows current resources and production",
         "upgrades": "shows built upgrades and their effects",
         "construction": "shows all upgrades in construction and how many turns are left",
-        # "options": "to change how the game works",
+        "options": "to change how the game works",
         "save": "saves the game\nquick form: 'save SAVE_NAME'",
         "load": "loads the save file\nquick form: 'load SAVE_NAME'",
         "menu": "brings you back to the menu"
@@ -374,7 +413,9 @@ class Game:
         self.gameState = "normal"
         self.turn = 1
         # self.hasLoan = False
-        self.castle = Castle("missing name", Resources(100, 500, 1000), Resources(5, 30, 50))
+        Options.startingProduction.Show()
+        Options.startingProduction.Show()
+        self.castle = Castle("missing name", Options.startingResources, Options.startingProduction)
 
     def Start(self):
         print(r"""welcome back to...
@@ -453,7 +494,12 @@ class Game:
                     self.castle.ShowConstruction()
 
                 elif command == "options":
-                    pass
+                    if fullCommand[1] == "save":
+                        Options.Save()
+                    elif fullCommand[1] == "load":
+                        Options.Load()
+                    else:
+                        print("no command associated")
 
                 elif command == "save":
                     if len(fullCommand) > 1:
@@ -539,7 +585,6 @@ class Game:
                 saveFile.write(f"name {self.castle.name}\n")
                 saveFile.write(f"gameState {self.gameState}\n")
                 saveFile.write(f"turnsToAutosave {self.turnsToAutosave}\n")
-                saveFile.write(f"hasShownTutorial {Options.hasShownTutorial}\n")
                 for upgrade in self.castle.builtUpgrades:
                     saveFile.write(
                         f"upgrades {upgrade} {self.castle.builtUpgrades[upgrade]} {self.castle.upgradesInConstruction[upgrade]}\n")
@@ -589,13 +634,11 @@ class Game:
                     if key == "turn":
                         self.turn = int(value)
                     elif key == "name" and len(line) > 5:
-                        self.castle.name = line[4:].replace('\n', '')
+                        self.castle.name = line[5:].replace('\n', '')
                     elif key == "gameState" and len(line) > 11:
-                        self.gameState = line[9:].replace('\n', '')
+                        self.gameState = line[10:].replace('\n', '')
                     elif key == "turnsToAutosave":
                         self.turnsToAutosave = int(value)
-                    elif key == "hasShownTutorial":
-                        Options.hasShownTutorial = bool(value)
                     elif key == "upgrades":
                         self.castle.builtUpgrades[value] = int(information[2])  # upgrade lvl
                         self.castle.upgradesInConstruction[value] = int(information[3])  # turns until it's finished
@@ -637,26 +680,28 @@ class Game:
        ▀                              ▐                  
 """)
 
-        if self.castle.resources.food:
+        if self.castle.resources.food < 0:
             print(
                 f"After this year harvest it was clear that {self.castle.name} didn't have enough food for everyone.\n"
                 f"So while the wealthy of {self.castle.name} eat until exploding, the plebs were starving to death.\n"
                 f"This lead many to take arms with what they could find and start a rebellion.\n"
                 f"After all the bloodshed, there was hardly something left of {self.castle.name}")
 
-        if self.castle.resources.gold:
+        if self.castle.resources.gold < 0:
             print(
                 f"Having nothing left in the treasury, {self.castle.name}'s soldiers organized a military coup and overthrow your rule.\n"
                 f"Under this other ruler, plebes would get taxed to death and executed for frivolous reasons.\n"
                 f"So the great majority of people fled away from {self.castle.name}, who soon turned into an abandoned castle occupied by thief and looters")
 
-        if self.castle.resources.manpower:
+        if self.castle.resources.manpower < 0:
             print(
                 f"The manpower reserves in {self.castle.name} got so thin that it was no longer able to maintain order.\n"
                 f"This caused {self.castle.name} to get sacked and burned to the ground by some looters.\n"
                 f"Leaving death and smoke of what was once a Great castle")
 
         print(f"{self.castle.name} has survived for {self.turn} turns.\nBut in the end it all got destroyed")
+
+        input("waiting for input... ")
 
     def Build(self, category: str = None):
         if category != None:
@@ -689,6 +734,8 @@ if __name__ == '__main__':
 
     if not os.path.exists(Options.savesDir):
         os.mkdir(Options.savesDir)
+    if not os.path.isfile('options.txt'):
+        Options.Save()
 
     Options.Load()
 
